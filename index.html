@@ -72,9 +72,21 @@
           </label>
         </div>
 
+        <div class="format-row">
+          <label>
+            출력 포맷
+            <select id="format-select">
+              <option value="original">원본 유지</option>
+              <option value="image/jpeg">JPEG</option>
+              <option value="image/png">PNG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </label>
+        </div>
+
         <div class="quality-row" id="quality-row">
           <label>
-            JPEG 품질
+            품질 (JPEG / WebP)
             <input type="range" id="quality-range" min="10" max="100" value="90">
             <span id="quality-value">90</span>%
           </label>

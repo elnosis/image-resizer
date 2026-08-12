@@ -182,6 +182,28 @@ input[type="range"] {
   accent-color: var(--primary);
 }
 
+.format-row {
+  margin: 16px 0 12px;
+}
+
+.format-row select {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  background: white;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.format-row select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
 .quality-row {
   margin-bottom: 20px;
 }

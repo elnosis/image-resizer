@@ -14,6 +14,7 @@
   const qualityRange = document.getElementById('quality-range');
   const qualityValue = document.getElementById('quality-value');
   const qualityRow = document.getElementById('quality-row');
+  const formatSelect = document.getElementById('format-select');
 
   const resizeBtn = document.getElementById('resize-btn');
   const resetBtn = document.getElementById('reset-btn');
@@ -34,7 +35,8 @@
   let originalWidth = 0;
   let originalHeight = 0;
   let currentBlob = null;
-  let currentMime = 'image/jpeg';
+  let originalMime = 'image/jpeg';  // 원본 파일 형식
+  let outputMime = 'image/jpeg';   // 실제 출력에 사용할 형식
   let isUpdating = false; // prevent feedback loops on inputs
 
   // ---- File Handling ----
@@ -67,12 +69,16 @@
     }
 
     originalFile = file;
-    currentMime = file.type === 'image/png' ? 'image/png' :
-                  file.type === 'image/webp' ? 'image/webp' :
-                  file.type === 'image/gif' ? 'image/gif' : 'image/jpeg';
+    // 원본 MIME 결정
+    if (file.type === 'image/png') originalMime = 'image/png';
+    else if (file.type === 'image/webp') originalMime = 'image/webp';
+    else if (file.type === 'image/gif') originalMime = 'image/gif';
+    else originalMime = 'image/jpeg';
 
-    // Show quality only for JPEG
-    qualityRow.style.display = currentMime === 'image/jpeg' ? 'block' : 'none';
+    // 기본 출력은 원본 유지
+    formatSelect.value = 'original';
+    updateOutputMime();
+    updateQualityVisibility();
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -100,6 +106,27 @@
     };
     reader.readAsDataURL(file);
   }
+
+  function updateOutputMime() {
+    const selected = formatSelect.value;
+    if (selected === 'original') {
+      // GIF는 Canvas에서 애니메이션을 유지할 수 없으므로 PNG로 변환
+      outputMime = (originalMime === 'image/gif') ? 'image/png' : originalMime;
+    } else {
+      outputMime = selected;
+    }
+  }
+
+  function updateQualityVisibility() {
+    // JPEG 또는 WebP일 때만 품질 조절 표시
+    const needsQuality = outputMime === 'image/jpeg' || outputMime === 'image/webp';
+    qualityRow.style.display = needsQuality ? 'block' : 'none';
+  }
+
+  formatSelect.addEventListener('change', () => {
+    updateOutputMime();
+    updateQualityVisibility();
+  });
 
   function showOriginalPreview() {
     previewImg.src = originalImage.src;
@@ -214,31 +241,45 @@
   });
 
   function resizeImage(w, h) {
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
+    return new Promise((resolve, reject) => {
+      updateOutputMime(); // 최신 포맷 반영
 
-    // High quality settings
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
 
-    ctx.drawImage(originalImage, 0, 0, w, h);
-
-    const quality = currentMime === 'image/jpeg' ? qualityRange.value / 100 : 0.92;
-
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        alert('이미지 생성에 실패했습니다.');
-        return;
+      // JPEG로 변환할 때 투명 배경이 검정으로 나오는 것을 방지
+      if (outputMime === 'image/jpeg') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
       }
-      currentBlob = blob;
-      const url = URL.createObjectURL(blob);
-      previewImg.src = url;
 
-      originalInfo.textContent = `원본: ${originalWidth} × ${originalHeight} px · ${formatSize(originalFile.size)}`;
-      newInfo.textContent = `변경 후: ${w} × ${h} px · ${formatSize(blob.size)}`;
-    }, currentMime, quality);
+      // High quality settings
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      ctx.drawImage(originalImage, 0, 0, w, h);
+
+      const needsQuality = outputMime === 'image/jpeg' || outputMime === 'image/webp';
+      const quality = needsQuality ? (qualityRange.value / 100) : undefined;
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          alert('이미지 생성에 실패했습니다. 다른 포맷을 시도해보세요.');
+          reject(new Error('toBlob failed'));
+          return;
+        }
+        currentBlob = blob;
+        const url = URL.createObjectURL(blob);
+        previewImg.src = url;
+
+        const formatLabel = getFormatLabel(outputMime);
+        originalInfo.textContent = `원본: ${originalWidth} × ${originalHeight} px · ${formatSize(originalFile.size)}`;
+        newInfo.textContent = `변경 후: ${w} × ${h} px · ${formatSize(blob.size)} · ${formatLabel}`;
+        resolve(blob);
+      }, outputMime, quality);
+    });
   }
 
   // ---- Reset ----
@@ -252,31 +293,42 @@
   });
 
   // ---- Download ----
-  downloadBtn.addEventListener('click', () => {
-    if (!currentBlob && originalImage) {
-      // download original if not resized
-      const a = document.createElement('a');
-      a.href = originalImage.src;
-      a.download = getDownloadName(originalFile.name, originalWidth, originalHeight);
-      a.click();
-      return;
-    }
-    if (!currentBlob) return;
+  downloadBtn.addEventListener('click', async () => {
+    if (!originalImage) return;
 
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(currentBlob);
+    // 아직 리사이즈하지 않았거나 포맷만 바꾸고 싶을 때 → 원본 크기로 변환
+    if (!currentBlob) {
+      try {
+        await resizeImage(originalWidth, originalHeight);
+      } catch (e) {
+        return;
+      }
+    }
+
     const w = previewImg.naturalWidth || parseInt(widthInput.value) || originalWidth;
     const h = previewImg.naturalHeight || parseInt(heightInput.value) || originalHeight;
+    triggerDownload(currentBlob, w, h);
+  });
+
+  function triggerDownload(blob, w, h) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
     a.download = getDownloadName(originalFile.name, w, h);
     a.click();
-  });
+  }
 
   function getDownloadName(originalName, w, h) {
     const base = originalName.replace(/\.[^.]+$/, '');
-    const ext = currentMime === 'image/png' ? 'png' :
-                currentMime === 'image/webp' ? 'webp' :
-                currentMime === 'image/gif' ? 'gif' : 'jpg';
+    const ext = outputMime === 'image/png' ? 'png' :
+                outputMime === 'image/webp' ? 'webp' : 'jpg';
     return `${base}_${w}x${h}.${ext}`;
+  }
+
+  function getFormatLabel(mime) {
+    if (mime === 'image/png') return 'PNG';
+    if (mime === 'image/webp') return 'WebP';
+    if (mime === 'image/jpeg') return 'JPEG';
+    return mime;
   }
 
   // ---- New Image ----
