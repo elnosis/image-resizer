@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="description" content="이미지 파일 사이즈를 비율을 유지하며 변경하는 PWA">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="이미지 리사이저">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>이미지 리사이저</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>📐 이미지 리사이저</h1>
+      <p class="subtitle">비율을 유지하며 이미지 크기를 변경합니다</p>
+    </header>
+
+    <main>
+      <!-- Upload Area -->
+      <section id="upload-section" class="card">
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-content">
+            <span class="drop-icon">🖼️</span>
+            <p>이미지를 여기에 드래그하거나 클릭해서 선택하세요</p>
+            <p class="hint">JPG, PNG, WEBP, GIF 지원</p>
+          </div>
+          <input type="file" id="file-input" accept="image/*" hidden>
+        </div>
+      </section>
+
+      <!-- Controls (hidden until image loaded) -->
+      <section id="controls-section" class="card hidden">
+        <h2>크기 조절</h2>
+        
+        <div class="mode-tabs">
+          <button type="button" class="tab active" data-mode="dimension">너비 / 높이</button>
+          <button type="button" class="tab" data-mode="percent">비율 (%)</button>
+        </div>
+
+        <div id="dimension-mode" class="mode-panel">
+          <div class="input-row">
+            <label>
+              너비 (px)
+              <input type="number" id="width-input" min="1" max="10000" placeholder="예: 800">
+            </label>
+            <label>
+              높이 (px)
+              <input type="number" id="height-input" min="1" max="10000" placeholder="예: 600">
+            </label>
+          </div>
+          <p class="help-text">한쪽만 입력하면 비율에 맞게 자동 계산됩니다.</p>
+        </div>
+
+        <div id="percent-mode" class="mode-panel hidden">
+          <label>
+            축소/확대 비율 (%)
+            <input type="number" id="percent-input" min="1" max="500" value="50" step="1">
+          </label>
+          <input type="range" id="percent-range" min="1" max="200" value="50">
+        </div>
+
+        <div class="options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="keep-ratio" checked>
+            비율 유지
+          </label>
+        </div>
+
+        <div class="quality-row" id="quality-row">
+          <label>
+            JPEG 품질
+            <input type="range" id="quality-range" min="10" max="100" value="90">
+            <span id="quality-value">90</span>%
+          </label>
+        </div>
+
+        <div class="btn-row">
+          <button id="resize-btn" class="btn primary">리사이즈 적용</button>
+          <button id="reset-btn" class="btn secondary">원본으로</button>
+        </div>
+      </section>
+
+      <!-- Preview -->
+      <section id="preview-section" class="card hidden">
+        <h2>미리보기</h2>
+        <div class="preview-info">
+          <span id="original-info"></span>
+          <span id="new-info"></span>
+        </div>
+        <div class="preview-container">
+          <img id="preview-img" alt="미리보기">
+        </div>
+        <div class="btn-row">
+          <button id="download-btn" class="btn primary">다운로드</button>
+          <button id="new-image-btn" class="btn secondary">새 이미지</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>오프라인에서도 사용 가능한 PWA입니다 · 로컬에서만 처리됩니다</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

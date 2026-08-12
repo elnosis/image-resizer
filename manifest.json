@@ -1,0 +1,26 @@
+{
+  "name": "이미지 리사이저",
+  "short_name": "이미지리사이저",
+  "description": "비율을 유지하며 이미지 파일 사이즈를 변경하는 PWA",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "lang": "ko",
+  "categories": ["utilities", "photo"]
+}
